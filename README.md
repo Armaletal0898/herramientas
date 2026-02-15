@@ -40,8 +40,9 @@ pip install psutil tabulate
 ### Instalacion del repositorio
 Ejecuta el siguiente comando en tu terminal:
 
+```bash
 git clone -b sentinel 
 
-
+```
 
 
