@@ -38,15 +38,15 @@ pip install patool
 ### 1. Clonar y Preparar
 
 ```bash
-git clone https://github.com/Armaletal0898/descompress.git
-cd descompress
+git clone -b descompres https://github.com/Armaletal0898/herramientas.git
+cd herramietas
 
 ```
 
 ### 2. Ejecutar
 
 ```bash
-python3 descompres_master.py
+python3 descompres.py
 
 ```
 
