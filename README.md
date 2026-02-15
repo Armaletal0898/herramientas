@@ -1,4 +1,5 @@
 
+<img width="1885" height="589" alt="Captura de pantalla_20260214_230110" src="https://github.com/user-attachments/assets/73ee1795-bb01-4e32-9012-b59baa5c39f9" />
 
 # 🛡️ HashView: Integrity Checker & Forensic Tool
 
