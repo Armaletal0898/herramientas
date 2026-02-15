@@ -81,7 +81,5 @@ El generador utiliza el módulo `secrets`, el cual es preferible al módulo `ran
 
 Desarrollado por **KYLORESITH**.
 
-* [Tu GitHub](https://www.google.com/search?q=https://github.com/Armaletal0898)
 
----
 
