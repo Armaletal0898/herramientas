@@ -1,5 +1,6 @@
 
-<img width="1885" height="563" alt="Captura de pantalla_20260215_161629" src="https://github.com/user-attachments/assets/183eef7e-7df9-4b81-bd22-68cd9c36ef8c" />
+<img width="1883" height="537" alt="Captura de pantalla_20260215_162459" src="https://github.com/user-attachments/assets/8e06701f-75d4-47a9-943c-aeadcb195b2c" />
+
 
 
 ---
@@ -24,10 +25,12 @@
 
 La seguridad de una contraseña no solo depende de lo "rara" que sea, sino de su **entropía en bits**. Esta herramienta utiliza la fórmula:
 
+E=L⋅log2​(R)
+
 Donde:
 
-* ****: Longitud de la contraseña.
-* ****: Tamaño del conjunto de caracteres (letras, números, símbolos).
+* L: Longitud de la contraseña.
+* R: Tamaño del conjunto de caracteres (letras, números, símbolos).
 
 ### Niveles de Seguridad en la Herramienta:
 
