@@ -41,8 +41,37 @@ pip install psutil tabulate
 Ejecuta el siguiente comando en tu terminal:
 
 ```bash
-git clone -b sentinel 
+git clone -b sentinel https://github.com/Armaletal0898/herramientas.git
+cd herramientas
 
 ```
+
+
+
+🚦 Modo de Uso
+
+Para aprovechar todas las capacidades de análisis (especialmente en red y persistencia), se recomienda ejecutar el script con privilegios de administrador.
+
+En Linux:
+```bash
+
+sudo python3 sentinel.py
+
+```
+
+En Windows:
+Ejecutar la terminal (CMD o PowerShell) como Administrador y correr:
+
+```bash
+
+python sentinel.py
+
+```
+
+
+
+⚠️ Descargo de Responsabilidad
+
+Esta herramienta fue creada con fines educativos y de auditoría de seguridad. El uso de la función "Kill" sobre procesos del sistema puede causar inestabilidad si no se usa con precaución. El autor no se hace responsable por el mal uso de la herramienta.
 
 
