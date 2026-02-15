@@ -52,10 +52,17 @@ Donde:
 
 ### Ejecución
 
-1. Clona este repositorio o descarga el archivo `git clone -b hashview https://github.com/Armaletal0898/herramientas.git
+1. Clona este repositorio en la terminal:
+
+```bash
+git clone -b hashview https://github.com/Armaletal0898/herramientas.git
 cd herramientas`.
+
+```
+
 2. Abre una terminal en la carpeta del archivo.
 3. Ejecuta el script:
+
 ```bash
 python3 passecure.py
 
