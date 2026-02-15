@@ -27,8 +27,7 @@ Solo necesitas tener instalado **Python 3.x**. No requiere librerías externas (
 ### Clonar el repositorio
 
 ```bash
-git clone https://github.com/Armaletal0898/hashview.git
-cd hashview
+git clone -b hashview https://github.com/Armaletal0898/herramientas.git
 
 ```
 
