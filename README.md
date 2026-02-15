@@ -1,4 +1,4 @@
-![Uploading Captura de pantalla_20260214_230110.png…]()
+
 
 # 🛡️ HashView: Integrity Checker & Forensic Tool
 
