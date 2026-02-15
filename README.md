@@ -28,6 +28,7 @@ Solo necesitas tener instalado **Python 3.x**. No requiere librerías externas (
 
 ```bash
 git clone -b hashview https://github.com/Armaletal0898/herramientas.git
+cd herramientas
 
 ```
 
