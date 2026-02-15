@@ -23,7 +23,7 @@ Solo necesitas tener instalado **Python 3.x**. No requiere librerías externas (
 ### Clonar el repositorio
 
 ```bash
-git clone https://github.com/tu-usuario/hashview.git
+git clone https://github.com/Armaletal0898/hashview.git
 cd hashview
 
 ```
