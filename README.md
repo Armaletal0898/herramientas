@@ -56,7 +56,7 @@ Donde:
 
 ```bash
 git clone -b hashview https://github.com/Armaletal0898/herramientas.git
-cd herramientas`.
+cd herramientas
 
 ```
 
