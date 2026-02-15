@@ -1,6 +1,9 @@
 
 <img width="1885" height="589" alt="Captura de pantalla_20260214_230110" src="https://github.com/user-attachments/assets/73ee1795-bb01-4e32-9012-b59baa5c39f9" />
 
+#Hash_History.txt
+<img width="1873" height="376" alt="Captura de pantalla_20260214_230304" src="https://github.com/user-attachments/assets/d084bb00-0f6c-4f3d-83c7-e1f2d9857e5c" />
+
 # 🛡️ HashView: Integrity Checker & Forensic Tool
 
 **HashView** es una herramienta forense ligera escrita en Python diseñada para verificar la integridad de archivos mediante el cálculo de algoritmos de hashing criptográfico. Es ideal para analistas de malware, auditores de sistemas o cualquier usuario que necesite asegurar que un archivo no ha sido alterado.
