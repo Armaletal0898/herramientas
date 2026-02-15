@@ -4,9 +4,9 @@
 
 ---
 
-# 🔑 PySecure-Pass: Generator & Analyzer
+# 🔑 Passecure: Generator & Analyzer
 
-**PySecure-Pass** es una herramienta de ciberseguridad defensiva diseñada para generar contraseñas criptográficamente seguras y auditar su fortaleza mediante el cálculo de entropía en bits. A diferencia de los generadores estándar, esta herramienta utiliza el módulo `secrets` de Python, ideal para aplicaciones donde la seguridad es crítica.
+**Passecure** es una herramienta de ciberseguridad defensiva diseñada para generar contraseñas criptográficamente seguras y auditar su fortaleza mediante el cálculo de entropía en bits. A diferencia de los generadores estándar, esta herramienta utiliza el módulo `secrets` de Python, ideal para aplicaciones donde la seguridad es crítica.
 
 ---
 
