@@ -72,18 +72,4 @@ Aunque MD5 y SHA-1 son incluidos por compatibilidad y análisis forense, recuerd
 
 ---
 
-## 👤 Autor
-
-Desarrollado por **KILORENSITH**.
-
-* [Tu GitHub](https://www.google.com/search?q=https://github.com/Armaletal0898)
-
-
----
-
-## 📄 Licencia
-
-Este proyecto está bajo la licencia MIT. Siéntete libre de usarlo, modificarlo y distribuirlo.
-
----
 
