@@ -95,7 +95,7 @@ python encryptor.py
 
 ## ⚠️ Advertencias de Seguridad
 
-> [!CAUTION]
+> [!PRECAUCION]
 > **PÉRDIDA DE CLAVE:** El cifrado AES-256 es computacionalmente imposible de romper por fuerza bruta hoy en día. Si pierdes o borras el archivo `secret.key`, tus archivos cifrados quedarán bloqueados para siempre. **Haz una copia de seguridad de tu clave en un lugar seguro.**
 
 ---
