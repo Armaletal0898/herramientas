@@ -7,7 +7,6 @@
 
 <img width="1920" height="1080" alt="Captura de pantalla_20260215_235807" src="https://github.com/user-attachments/assets/d4051e0f-4d62-404d-a6cd-70d759db3c55" />
 
-<img width="1920" height="1080" alt="Captura de pantalla_20260215_235807" src="https://github.com/user-attachments/assets/62a1b251-44b6-4491-a2b0-71a8d420ddd4" />
 
 ---
 
