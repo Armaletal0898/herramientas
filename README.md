@@ -1,5 +1,5 @@
 
-<img width="1884" height="996" alt="Captura de pantalla_20260215_162802" src="https://github.com/user-attachments/assets/1976e0bc-4b3a-4d9d-a198-95a1f3af6cdc" />
+<img width="1881" height="991" alt="Captura de pantalla_20260216_003648" src="https://github.com/user-attachments/assets/9510ad91-25cc-41d3-92bb-04f2f5c77ed5" />
 
 
 
