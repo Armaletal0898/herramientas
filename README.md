@@ -54,7 +54,7 @@ pip install cryptography
 
 ### 2. Ejecución
 
-Clona el repositorio o descarga el script y ejecútalo:
+Clona el repositorio o descarga el script:
 
 ```bash
 git clone -b encryptor https://github.com/Armaletal0898/herramientas.git
@@ -62,6 +62,7 @@ cd herramientas
 
 
 ```
+Ejecutalo:
 
 
 ```bash
@@ -71,9 +72,14 @@ python encryptor.py
 
 ### 3. Pasos recomendados
 
-1. **Opción 1:** Genera tu Clave Maestra. (Solo haz esto una vez, o perderás acceso a archivos cifrados con claves anteriores).
-2. **Opción 2:** Ingresa la ruta del archivo que deseas proteger.
+1. **Opción 1:** Genera tu Clave Maestra dentro del directorio en donde esta el archivo que quieres encryptar. (Solo haz esto una vez, o perderás acceso a archivos cifrados con claves anteriores).
+2. **Opción 2:** Ingresa el nombre del archivo con su extension estando dentro del directorio del archivo.
 3. **Opción 3:** Usa la misma clave para restaurar tu archivo cuando lo necesites.
+
+##  NOTA:
+
+> **PUNTO IMPORTANTE:** Sugiero que crees una carpeta en donde vayas a guardar los archivos que quieras encryptar y la `secret.key` como tambien el `crypto_log.txt`. 
+
 
 ---
 
