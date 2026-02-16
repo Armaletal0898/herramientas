@@ -70,7 +70,7 @@ Ejecutalo:
 
 
 ```bash
-python encryptor.py
+python3 encryptor.py
 
 ```
 
