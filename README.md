@@ -64,7 +64,7 @@ La herramienta utiliza la técnica de **Hashing**, que convierte datos de entrad
 
 ## 📁 Estructura del Proyecto
 
-* `hashview.py`: El código fuente principal.
+* `hash_check.py`: El código fuente principal.
 * `hash_history.txt`: Archivo generado automáticamente que guarda el registro de auditoría.
 * `README.md`: Documentación del proyecto.
 
