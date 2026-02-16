@@ -37,7 +37,7 @@ cd herramientas
 Para iniciar la herramienta, simplemente corre el script:
 
 ```bash
-python3 hashview.py
+python3 hash_check.py
 
 ```
 
