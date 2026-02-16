@@ -85,9 +85,5 @@ El generador utiliza el módulo `secrets`, el cual es preferible al módulo `ran
 
 ---
 
-## 👤 Autor
-
-Desarrollado por **KYLORESITH**.
-
 
 
