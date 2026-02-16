@@ -5,6 +5,8 @@
 
 <img width="1878" height="844" alt="Captura de pantalla_20260215_235642" src="https://github.com/user-attachments/assets/cf9282f5-4b1e-429d-96ca-b9d1fee5f8d4" />
 
+<img width="1885" height="903" alt="Captura de pantalla_20260215_235708" src="https://github.com/user-attachments/assets/4bada390-975d-4b13-8210-bf336d93c14d" />
+
 <img width="1920" height="1080" alt="Captura de pantalla_20260215_235807" src="https://github.com/user-attachments/assets/d4051e0f-4d62-404d-a6cd-70d759db3c55" />
 
 
