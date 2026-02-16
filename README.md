@@ -57,7 +57,7 @@ pip install cryptography
 Clona el repositorio o descarga el script y ejecútalo:
 
 ```bash
-python encryptor.py
+git clone -b encryptor .py
 
 ```
 
@@ -93,7 +93,3 @@ python encryptor.py
 ---
 
 
-
----
-
-**¿Te gustaría que añadiera una sección sobre cómo automatizar el respaldo de la clave `secret.key` en una ubicación en la nube o externa?**
