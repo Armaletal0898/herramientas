@@ -57,7 +57,9 @@ pip install cryptography
 Clona el repositorio o descarga el script y ejecútalo:
 
 ```bash
-git clone -b encryptor .py
+git clone -b encryptor https://github.com/Armaletal0898/herramientas.git
+cd herramientas
+
 
 ```
 
