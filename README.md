@@ -55,7 +55,7 @@ Donde:
 1. Clona este repositorio en la terminal:
 
 ```bash
-git clone -b hashview https://github.com/Armaletal0898/herramientas.git
+git clone -b passecure https://github.com/Armaletal0898/herramientas.git
 cd herramientas
 
 ```
