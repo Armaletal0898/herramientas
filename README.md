@@ -1,8 +1,18 @@
-Este es el archivo **README.md** profesional para tu herramienta. Está diseñado para que cualquier persona que visite tu repositorio entienda de inmediato qué hace el script, cómo instalarlo y, lo más importante, las precauciones de seguridad que debe tener.
+
+<img width="1877" height="806" alt="Captura de pantalla_20260215_235346" src="https://github.com/user-attachments/assets/5bdc34f5-cc11-42bf-8611-815a49f43f7b" />
+
+<img width="1913" height="1078" alt="Captura de pantalla_20260215_235504" src="https://github.com/user-attachments/assets/cfcd9b22-6c9f-474c-b34b-72c60a489525" />
+
+<img width="1878" height="844" alt="Captura de pantalla_20260215_235642" src="https://github.com/user-attachments/assets/cf9282f5-4b1e-429d-96ca-b9d1fee5f8d4" />
+
+<img width="1920" height="1080" alt="Captura de pantalla_20260215_235807" src="https://github.com/user-attachments/assets/d4051e0f-4d62-404d-a6cd-70d759db3c55" />
+
+<img width="1920" height="1080" alt="Captura de pantalla_20260215_235807" src="https://github.com/user-attachments/assets/62a1b251-44b6-4491-a2b0-71a8d420ddd4" />
 
 ---
 
 # 🔐 ENCRYPTOR - AES-256 File Encryption System
+
 
 **ENCRYPTOR** es una herramienta de ciberseguridad desarrollada en Python que permite cifrar y descifrar archivos de forma segura utilizando el estándar **AES-256** (a través de la implementación Fernet). Es ideal para proteger información sensible localmente con un sistema de grado militar.
 
