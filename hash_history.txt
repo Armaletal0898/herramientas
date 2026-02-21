@@ -1,0 +1,3 @@
+/home/kyloren/Desktop/Codigos.docx | SHA256: 5a53ef61b0348689e02972a95d55584e01938d342d2f8e29252b7be201d51c85
+/home/kyloren/Desktop/task-darksith-vzcreate-2026-01-04T00_17_47Z.log | SHA256: 0291cf878e12dd2fb600af3a444ec4cb528c1e2e81eb9a709e161292ce07e078
+/home/kyloren/Desktop/task-darksith-vzcreate-2026-01-04T00_17_47Z.log | SHA256: 0291cf878e12dd2fb600af3a444ec4cb528c1e2e81eb9a709e161292ce07e078
