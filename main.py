@@ -101,31 +101,38 @@ if submit:
 
 
 
-# --- 6. ÁREA DE RESULTADOS Y BOTÓN DE LIMPIEZA ---
+# --- 6. ÁREA DE RESULTADOS Y BOTÓN DE LIMPIEZA CON CONFIRMACIÓN ---
 res = st.session_state.results
 
 if res:
-    # Creamos dos columnas: una para el título y otra para el botón de limpiar
-    col_title, col_clear = st.columns([0.85, 0.15])
+    # Creamos dos columnas: una para el título y otra para el botón/popover
+    col_title, col_clear = st.columns([0.80, 0.20])
     
     with col_title:
         st.subheader(f"📊 Resultados para: {res['target']}")
     
     with col_clear:
-        # Botón para resetear la sesión
-        if st.button("🗑️ Limpiar", use_container_width=True, help="Borra los resultados actuales"):
-            st.session_state.results = None
-            # También limpiamos las claves específicas de los módulos
-            keys = ['tech_data', 'form_data', 'fuzzer_results', 'tech_results', 'form_results']
-            for k in keys:
-                if k in st.session_state: del st.session_state[k]
-            st.rerun() # Recarga la app para volver al estado inicial
+        # Usamos un popover para que el botón de confirmación no ocupe espacio extra
+        with st.popover("🗑️ Limpiar", use_container_width=True):
+            st.warning("¿Estás seguro de que quieres borrar los resultados?")
+            if st.button("Sí, borrar todo", type="primary", use_container_width=True):
+                # Resetear la sesión
+                st.session_state.results = None
+                # Limpiar claves de módulos específicos
+                keys_to_reset = ['tech_data', 'form_data', 'fuzzer_results', 'tech_results', 'form_results']
+                for k in keys_to_reset:
+                    if k in st.session_state:
+                        del st.session_state[k]
+                st.rerun()
 
-# --- 7. RENDERIZADO DE CONTENIDO SEGÚN EL MENÚ ---
+# --- 7. RENDERIZADO DE CONTENIDO ---
 if not res:
-    # Mensaje de bienvenida cuando no hay escaneo activo
     st.info("👋 Bienvenido a Scan-Web Pro. Introduce un dominio en el panel lateral para comenzar.")
+    # Permitir ver la guía aunque no haya escaneo
+    if menu == "🛡️ Guía de Seguridad":
+        render_guia()
 else:
+    # Mostrar el módulo seleccionado según el menú de navegación
     if menu == "🧪 Auditoría Web":
         render_auditoria(res)
     elif menu == "🔗 Subdominios":
@@ -138,7 +145,3 @@ else:
         render_fuzzer(res)
     elif menu == "🛡️ Guía de Seguridad":
         render_guia()
-
-# Solo mostramos la Guía de Seguridad si no hay resultados, ya que no depende de un escaneo
-if menu == "🛡️ Guía de Seguridad" and not res:
-    render_guia()
