@@ -1,94 +1,102 @@
 import streamlit as st
 
 def apply_styles():
-    # --- CONFIGURACIÓN DE COLORES ---
-    COLOR_TEXT_SAFE = "#cbd5e1"
-    SIDEBAR_BG = "#1e293b"
+    """
+    Aplica estilos CSS dinámicos que se adaptan automáticamente al tema 
+    elegido por el usuario (Light o Dark).
+    """
     
+    # Definición de variables de color para reutilizar
+    PRIMARY_PURPLE = "#6d28d9"
+    BORDER_COLOR_DARK = "rgba(51, 65, 85, 0.5)"
+    BORDER_COLOR_LIGHT = "rgba(203, 213, 225, 0.8)"
+
     st.markdown(f"""
         <style>
-            /* 1. FONDO GLOBAL DE LA APLICACIÓN */
-            .stApp {{ 
-                background-color: #0e1117 !important; 
-                color: #ffffff !important; 
+            /* --- 1. CONFIGURACIÓN DINÁMICA POR TEMA --- */
+
+            /* Estilos cuando el usuario elige MODO OSCURO */
+            [data-theme="dark"] .stApp {{
+                background-color: #0e1117;
+                color: #ffffff;
+            }}
+            [data-theme="dark"] [data-testid="stSidebar"] {{
+                background-color: #1e293b !important;
+                border-right: 1px solid {BORDER_COLOR_DARK} !important;
+            }}
+            [data-theme="dark"] [data-testid="stSidebar"] .stMarkdown p {{
+                color: #cbd5e1 !important;
             }}
 
-            /* 2. SIDEBAR (BARRA LATERAL) */
-            [data-testid="stSidebar"] {{ 
-                background-color: {SIDEBAR_BG} !important; 
-                border-right: 1px solid #334155 !important; 
+            /* Estilos cuando el usuario elige MODO CLARO (Elegante y cómodo) */
+            [data-theme="light"] .stApp {{
+                background-color: #f8fafc !important; /* Gris azulado muy suave */
+                color: #0f172a !important; /* Texto azul oscuro profundo */
             }}
-            
-            /* Asegurar que el contenedor interno del sidebar sea oscuro */
-            [data-testid="stSidebar"] > div:first-child {{
-                background-color: {SIDEBAR_BG} !important;
+            [data-theme="light"] [data-testid="stSidebar"] {{
+                background-color: #ffffff !important;
+                border-right: 1px solid {BORDER_COLOR_LIGHT} !important;
             }}
-
-            /* Estilo para los títulos y textos en el Sidebar */
-            [data-testid="stSidebar"] .stMarkdown p, 
-            [data-testid="stSidebar"] h1, 
-            [data-testid="stSidebar"] h2, 
-            [data-testid="stSidebar"] h3 {{
-                color: {COLOR_TEXT_SAFE} !important;
+            [data-theme="light"] [data-testid="stSidebar"] .stMarkdown p,
+            [data-theme="light"] [data-testid="stSidebar"] label {{
+                color: #334155 !important;
+                font-weight: 600 !important;
             }}
 
-            /* 3. INPUTS (CAMPOS DE TEXTO) */
-            [data-testid="stSidebar"] .stTextInput>div>div>input {{
-                background-color: #0f172a !important; 
-                color: white !important; 
-                border: 1px solid #475569 !important;
-                border-radius: 5px;
-            }}
+            /* --- 2. COMPONENTES COMUNES (ADAPTATIVOS) --- */
 
-            /* 4. BOTONES */
+            /* Botones con estilo moderno */
             .stButton>button {{
                 border-radius: 8px !important;
                 transition: all 0.3s ease;
+                font-weight: 600 !important;
             }}
 
-            /* 5. TARJETAS DE MÉTRICAS (Auditoría) */
+            /* Tarjetas de Métricas (Usamos transparencias para que se adapten) */
             .metric-card {{
-                background-color: #1e2130; 
+                background-color: rgba(30, 41, 59, 0.1); 
                 padding: 15px; 
                 border-radius: 10px;
-                border: 1px solid #333; 
+                border: 1px solid {PRIMARY_PURPLE}44;
                 text-align: center; 
                 margin-bottom: 10px;
             }}
-            .metric-label {{ font-size: 14px; color: #aaa; }}
-            .metric-value {{ font-size: 24px; font-weight: bold; color: {COLOR_TEXT_SAFE}; }}
+            
+            [data-theme="dark"] .metric-value {{ color: #ffffff; }}
+            [data-theme="light"] .metric-value {{ color: #1e293b; }}
 
-            /* 6. CUADRO DE INFORMACIÓN (Infraestructura/SSL) */
+            /* Cuadro de Información (Infraestructura/SSL) */
             .info-box {{
-                background-color: #1e2130; 
+                background-color: rgba(30, 41, 59, 0.05); 
                 padding: 20px; 
                 border-radius: 10px;
-                border: 1px solid #334155; 
+                border: 1px solid rgba(109, 40, 217, 0.2); 
                 height: 100%;
-                color: white;
+                color: inherit;
             }}
-            .info-box h4 {{ color: #ffffff !important; margin-top: 0; }}
 
-            /* 7. ESTILO DE LAS PESTAÑAS (TABS) */
+            /* Estilo de las pestañas (Tabs) */
             .stTabs [data-baseweb="tab-list"] {{
                 gap: 8px;
-                background-color: transparent;
             }}
             .stTabs [data-baseweb="tab"] {{
-                background-color: #1e2130;
+                background-color: rgba(30, 41, 59, 0.05);
                 border-radius: 5px 5px 0px 0px;
-                color: {COLOR_TEXT_SAFE};
                 padding: 8px 16px;
-                border: 1px solid #334155;
+                border: 1px solid rgba(109, 40, 217, 0.1);
             }}
+            
+            /* Pestaña seleccionada */
             .stTabs [aria-selected="true"] {{
-                background-color: #334155 !important;
-                border-bottom: 2px solid #e59a94 !important;
+                background-color: {PRIMARY_PURPLE}22 !important;
+                border-bottom: 2px solid {PRIMARY_PURPLE} !important;
             }}
 
-            /* 8. RADIO BUTTONS DEL MENÚ */
-            [data-testid="stSidebar"] .stRadio div[role="radiogroup"] {{
-                color: {COLOR_TEXT_SAFE};
+            /* --- 3. INPUTS Y FORMULARIOS --- */
+            [data-theme="light"] .stTextInput input {{
+                background-color: #ffffff !important;
+                color: #0f172a !important;
+                border: 1px solid #cbd5e1 !important;
             }}
         </style>
     """, unsafe_allow_html=True)
