@@ -1,0 +1,21 @@
+# Python (Caché y ejecución)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Streamlit (Caché local)
+.streamlit/
+
+# Entornos virtuales
+venv/
+env/
+.env
+
+# Archivos de datos sensibles/logs
+audit_log.txt
+*.log
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db

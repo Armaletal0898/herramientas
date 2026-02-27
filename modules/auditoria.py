@@ -4,6 +4,7 @@ import plotly.express as px
 import socket, requests, ssl
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
+from modules.security_core import SecurityCore  # Importación del motor de seguridad
 
 # --- COLORES ---
 COLOR_SAFE, COLOR_RISK, COLOR_WARN = "#475569", "#e59a94", "#f7d08a"
@@ -17,8 +18,10 @@ class UniversalSecurityScanner:
         parsed = urlparse(url)
         self.domain = parsed.netloc if parsed.netloc else parsed.path.split('/')[0]
         self.base_url = f"{parsed.scheme}://{self.domain}"
-        try: self.target_ip = socket.gethostbyname(self.domain)
-        except: self.target_ip = None
+        try: 
+            self.target_ip = socket.gethostbyname(self.domain)
+        except: 
+            self.target_ip = None
 
     def get_subdomains(self):
         subdomains = set()
@@ -27,7 +30,8 @@ class UniversalSecurityScanner:
             response = requests.get(url, timeout=10)
             if response.status_code == 200:
                 for entry in response.json():
-                    name = entry['name_value'].lower()
+                    # Sanitizamos el nombre del subdominio
+                    name = SecurityCore.sanitize_output(entry['name_value'].lower())
                     for sub in name.split("\n"):
                         subdomains.add(sub.replace("*.", ""))
             return sorted(list(subdomains))
@@ -37,7 +41,12 @@ class UniversalSecurityScanner:
         if not self.target_ip: return {"País": "N/A", "Ciudad": "N/A", "ISP": "N/A"}
         try:
             response = requests.get(f"http://ip-api.com/json/{self.target_ip}", timeout=5).json()
-            return {"País": response.get("country", "N/A"), "Ciudad": response.get("city", "N/A"), "ISP": response.get("isp", "N/A")}
+            # Sanitizamos la información geográfica
+            return {
+                "País": SecurityCore.sanitize_output(response.get("country", "N/A")), 
+                "Ciudad": SecurityCore.sanitize_output(response.get("city", "N/A")), 
+                "ISP": SecurityCore.sanitize_output(response.get("isp", "N/A"))
+            }
         except: return {"País": "Error", "Ciudad": "Error", "ISP": "Error"}
 
     def scan_ssl_pro(self):
@@ -48,7 +57,13 @@ class UniversalSecurityScanner:
                     cert = ssock.getpeercert()
                     issuer = dict(x[0] for x in cert.get('issuer'))['commonName']
                     expiry = cert.get('notAfter')
-                    return {"Estado": "✅ Seguro", "Emisor": issuer, "Expiración": expiry, "TLS": ssock.version()}
+                    # Sanitizamos emisor y versión de TLS
+                    return {
+                        "Estado": "✅ Seguro", 
+                        "Emisor": SecurityCore.sanitize_output(issuer), 
+                        "Expiración": SecurityCore.sanitize_output(expiry), 
+                        "TLS": SecurityCore.sanitize_output(ssock.version())
+                    }
         except: return {"Estado": "❌ No disponible", "Emisor": "N/A", "Expiración": "N/A", "TLS": "N/A"}
 
     def scan_ports(self):
@@ -68,8 +83,9 @@ class UniversalSecurityScanner:
             soup = BeautifulSoup(r.text, 'html.parser')
             forms = soup.find_all('form')
             for form in forms:
-                action = form.get('action') or "Interno"
-                method = form.get('method') or "GET"
+                # Sanitizamos los atributos de los formularios detectados
+                action = SecurityCore.sanitize_output(form.get('action') or "Interno")
+                method = SecurityCore.sanitize_output(form.get('method') or "GET")
                 vuls.append({"Formulario": action, "Método": method.upper(), "Tipo": "SQLi/XSS Risk", "Severidad": "Crítica"})
             return vuls
         except: return []
@@ -90,7 +106,11 @@ class UniversalSecurityScanner:
                 status = "✅ OK" if h in res.headers else "❌ Ausente"
                 h_res.append({"Cabecera": h, "Estado": status, "Función": desc})
             for cookie in res.cookies:
-                c_res.append({"Nombre": cookie.name, "Seguro": "✅" if cookie.secure else "❌ Insegura"})
+                # Sanitizamos los nombres de las cookies
+                c_res.append({
+                    "Nombre": SecurityCore.sanitize_output(cookie.name), 
+                    "Seguro": "✅" if cookie.secure else "❌ Insegura"
+                })
             return h_res, c_res
         except: return [], []
 
@@ -101,7 +121,9 @@ def render_auditoria(results):
 
     r = results
     
-    # 1. MÉTRICAS RÁPIDAS
+    # 1. MÉTRICAS RÁPIDAS (Sanitizamos el target para el reporte)
+    target_clean = SecurityCore.sanitize_output(r["target"])
+    
     m1, m2, m3, m4 = st.columns(4)
     m1.markdown(f'<div class="metric-card"><div class="metric-label">Riesgos SQLi</div><div class="metric-value">{len(r["sqli"])}</div></div>', unsafe_allow_html=True)
     m2.markdown(f'<div class="metric-card"><div class="metric-label">Puertos Abiertos</div><div class="metric-value">{len(r["ports"])}</div></div>', unsafe_allow_html=True)
@@ -183,27 +205,25 @@ def render_auditoria(results):
         
         summary_list = []
 
-        # A. HALLAZGOS AUDITORÍA BASE
         if r["sqli"]:
             summary_list.append({"Módulo": "Auditoría", "Hallazgo": "Posible Inyección SQL/XSS", "Severidad": "Crítica", "Impacto": "Acceso a Datos"})
         if "❌" in r["ssl"]["Estado"]:
             summary_list.append({"Módulo": "Auditoría", "Hallazgo": "Falta cifrado SSL", "Severidad": "Alta", "Impacto": "Man-in-the-Middle"})
         
-        # B. HALLAZGOS TECH STACK
         if 'tech_results' in st.session_state and st.session_state.tech_results:
             for t in st.session_state.tech_results:
-                summary_list.append({"Módulo": "Tech Stack", "Hallazgo": f"Software: {t.get('Valor')}", "Severidad": "Baja", "Impacto": "Enumeración"})
+                summary_list.append({"Módulo": "Tech Stack", "Hallazgo": f"Software: {SecurityCore.sanitize_output(t.get('Valor'))}", "Severidad": "Baja", "Impacto": "Enumeración"})
 
-        # C. HALLAZGOS FORMULARIOS
         if 'form_results' in st.session_state and st.session_state.form_results:
             for f in st.session_state.form_results:
                 if f.get("CSRF Token") == "No encontrado":
-                    summary_list.append({"Módulo": "Formularios", "Hallazgo": f"Falta CSRF en {f.get('Acción')}", "Severidad": "Media", "Impacto": "Ataque CSRF"})
+                    action_clean = SecurityCore.sanitize_output(f.get('Acción'))
+                    summary_list.append({"Módulo": "Formularios", "Hallazgo": f"Falta CSRF en {action_clean}", "Severidad": "Media", "Impacto": "Ataque CSRF"})
 
-        # D. HALLAZGOS FUZZER
         if 'fuzzer_data' in st.session_state and st.session_state.fuzzer_data:
             for entry in st.session_state.fuzzer_data:
-                summary_list.append({"Módulo": "Fuzzer", "Hallazgo": f"Ruta: {entry['Ruta']}", "Severidad": entry.get('Riesgo', 'Media'), "Impacto": "Acceso Directo"})
+                ruta_clean = SecurityCore.sanitize_output(entry['Ruta'])
+                summary_list.append({"Módulo": "Fuzzer", "Hallazgo": f"Ruta: {ruta_clean}", "Severidad": entry.get('Riesgo', 'Media'), "Impacto": "Acceso Directo"})
 
         if summary_list:
             df_sum = pd.DataFrame(summary_list)
@@ -220,4 +240,4 @@ def render_auditoria(results):
             st.info("⚠️ No hay hallazgos adicionales. Ejecuta los módulos individuales para ver resultados aquí.")
 
     st.divider()
-    st.caption(f"Security Analyst Report - Target: {r['target']}")
+    st.caption(f"Security Analyst Report - Target: {target_clean}")

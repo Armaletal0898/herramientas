@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import pandas as pd
+from modules.security_core import SecurityCore  # Importación del escudo de seguridad
 
 def render_tech_stack(results):
     # Título y Subtítulo con estilo
@@ -25,15 +26,16 @@ def render_tech_stack(results):
         st.info("⚠️ El escaneo activo puede ser registrado por WAFs o Firewalls.")
     
     with col2:
-        # Botón con estilo de acción (usa el color primario de tu tema)
+        # Botón con estilo de acción
         if st.button("🚀 Identificar Stack", use_container_width=True):
             with st.spinner("Ejecutando Fingerprinting..."):
                 techs = []
-                target_url = f"http://{results['target']}"
+                # Sanitizamos el target antes de construir la URL
+                safe_target = SecurityCore.sanitize_output(results['target'])
+                target_url = f"http://{safe_target}"
                 
-                # 1. Análisis de cabeceras (Pasivo pero detallado)
+                # 1. Análisis de cabeceras (Pasivo)
                 h = results.get("headers", {})
-                # Mapeo de cabeceras comunes a categorías
                 check_map = {
                     'Server': 'Servidor Web',
                     'X-Powered-By': 'Lenguaje/Framework',
@@ -41,49 +43,60 @@ def render_tech_stack(results):
                     'X-AspNet-Version': 'Framework .NET'
                 }
                 
+                # En el código original h es una lista de diccionarios del auditor, 
+                # convertimos a dict simple para búsqueda rápida
+                h_dict = {item['Cabecera']: item.get('Valor', 'N/A') for item in h if isinstance(item, dict)}
+                # Si el auditor no pasó los valores raw, intentamos una petición rápida
+                if not h_dict:
+                    try:
+                        res_head = requests.head(target_url, timeout=3)
+                        h_dict = res_head.headers
+                    except: pass
+
                 for header, categoria in check_map.items():
-                    if header in h:
-                        # IMPORTANTE: Usamos la clave "Valor" para el resumen final
+                    if header in h_dict:
+                        # SANITIZACIÓN del valor de la cabecera
+                        safe_val = SecurityCore.sanitize_output(h_dict[header])
                         techs.append({
                             "Categoría": categoria, 
-                            "Valor": h[header], 
+                            "Valor": safe_val, 
                             "Tipo": "Pasivo"
                         })
                 
-                # 2. Análisis Activo (Provocando un error 404 para ver firmas)
+                # 2. Análisis Activo
                 try:
-                    # Intentamos forzar una página inexistente
+                    # Forzamos error 404 para ver firmas
                     test_path = f"{target_url}/error_check_{int(pd.Timestamp.now().timestamp())}"
                     r = requests.get(test_path, timeout=3, verify=False)
                     
-                    # Revisamos si el cuerpo del error revela el servidor (ej: nginx/1.18.0)
-                    server_raw = r.headers.get('Server', '').lower()
+                    server_raw = r.headers.get('Server', '')
                     if server_raw:
                         techs.append({
                             "Categoría": "Servidor (Firma)", 
-                            "Valor": server_raw.capitalize(), 
+                            "Valor": SecurityCore.sanitize_output(server_raw.capitalize()), 
                             "Tipo": "Activo"
                         })
                     
-                    # Detección básica de CMS por rutas comunes
+                    # Detección de CMS
                     cms_paths = {
                         "/wp-includes/": "WordPress",
                         "/administrator/": "Joomla",
                         "/user/login": "Drupal"
                     }
                     for path, name in cms_paths.items():
-                        cms_check = requests.get(f"{target_url}{path}", timeout=2, verify=False)
-                        if cms_check.status_code == 200:
-                            techs.append({
-                                "Categoría": "CMS Detectado", 
-                                "Valor": name, 
-                                "Tipo": "Activo"
-                            })
+                        try:
+                            cms_check = requests.get(f"{target_url}{path}", timeout=2, verify=False)
+                            if cms_check.status_code == 200:
+                                techs.append({
+                                    "Categoría": "CMS Detectado", 
+                                    "Valor": SecurityCore.sanitize_output(name), 
+                                    "Tipo": "Activo"
+                                })
+                        except: continue
                             
                 except Exception as e:
-                    st.error(f"Error en fingerprinting activo: {e}")
+                    st.error(f"Error en fingerprinting activo: {SecurityCore.sanitize_output(str(e))}")
                 
-                # Guardar resultados en el estado de la sesión
                 st.session_state.tech_results = techs
 
     # --- RENDERIZADO DE RESULTADOS ---
@@ -91,10 +104,9 @@ def render_tech_stack(results):
         st.divider()
         st.write("### Tecnologías Identificadas")
         
-        # Convertimos a DataFrame para una visualización limpia
         df_tech = pd.DataFrame(st.session_state.tech_results)
         
-        # Mostramos la tabla con tu estilo
+        # Mostramos la tabla sanitizada
         st.dataframe(
             df_tech, 
             use_container_width=True, 
@@ -106,4 +118,4 @@ def render_tech_stack(results):
         st.warning("Presiona el botón superior para iniciar el análisis del stack.")
 
     st.divider()
-    st.caption("Módulo de Identificación de Tecnologías V1.5")
+    st.caption("Módulo de Identificación de Tecnologías V1.5 | Protected by SecurityCore")

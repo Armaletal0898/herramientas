@@ -1,17 +1,22 @@
 import streamlit as st
 import plotly.express as px
 import pandas as pd
+from modules.security_core import SecurityCore  # Importación del escudo de seguridad
 
 def render_guia():
-    st.title("🛡️ Guía de Seguridad Web ")
+    st.title("🛡️ Guía de Seguridad Web")
     st.markdown("---")
 
-    # 1. GRÁFICO DE PRIORIDADES (Ajustado para máxima visibilidad)
+    # 1. GRÁFICO DE PRIORIDADES
     st.subheader("📊 Matriz de Prioridades de Seguridad")
     
+    # Sanitizamos los nombres de las categorías del gráfico por precaución
+    categorias = ['Criptografía PQC','Zero Trust','Seguridad API','Privacidad de Datos','Resiliencia Ops']
+    safe_categorias = [SecurityCore.sanitize_output(cat) for cat in categorias]
+
     df_radar = pd.DataFrame(dict(
         r=[95, 90, 85, 90, 80],
-        theta=['Criptografía PQC','Zero Trust','Seguridad API','Privacidad de Datos','Resiliencia Ops']
+        theta=safe_categorias
     ))
     
     fig = px.line_polar(df_radar, r='r', theta='theta', line_close=True, range_r=[0,100])
@@ -79,7 +84,7 @@ def render_guia():
 
     st.divider()
 
-    # 3. RECOMENDACIONES DE IMPLEMENTACIÓN (VERSIÓN MAXIMIZADA)
+    # 3. RECOMENDACIONES DE IMPLEMENTACIÓN
     st.subheader("🚀 Recomendaciones de Implementación")
     
     rec_1, rec_2, rec_3 = st.columns(3)
@@ -88,43 +93,46 @@ def render_guia():
         st.info("### 📋 Higiene Operativa")
         st.markdown("""
         **Monitoreo y Logs:**
-        * **Centralización de Eventos:** Implementar un stack **ELK** o **Grafana Loki** para visualizar ataques en tiempo real.
-        * **Alertas de Umbral:** Configurar avisos inmediatos si se detectan más de 50 errores `401 Unauthorized` por minuto.
+        * **Centralización de Eventos:** Implementar un stack **ELK** o **Grafana Loki**.
+        * **Alertas de Umbral:** Avisos inmediatos ante errores `401 Unauthorized`.
         
         **Mantenimiento:**
-        * **SCA (Software Composition Analysis):** Escaneo automatizado de vulnerabilidades en dependencias (npm/pip) en cada build.
-        * **Hardening de Servidor:** Eliminar protocolos inseguros (FTP, Telnet) y forzar autenticación SSH mediante llaves RSA/Ed25519.
+        * **SCA:** Escaneo automatizado de vulnerabilidades en dependencias.
+        * **Hardening:** Forzar autenticación SSH mediante llaves seguras.
         """)
 
     with rec_2:
         st.success("### 🏗️ Arquitectura Segura")
         st.markdown("""
         **Infraestructura:**
-        * **Micro-segmentación:** Mantener las bases de datos en subredes privadas (VPC) aisladas, sin exposición directa a internet.
-        * **Contenedores Inmutables:** Configurar archivos de sistema como 'Read-Only' en Docker para evitar la inyección de malware.
+        * **Micro-segmentación:** Bases de datos en subredes privadas aisladas.
+        * **Contenedores Inmutables:** Docker en modo 'Read-Only'.
         
         **Defensa Proactiva:**
-        * **Secret Management:** Sustituir archivos `.env` por gestores de secretos dinámicos como **HashiCorp Vault** o AWS Secrets Manager.
-        * **API Gateway:** Centralizar la seguridad de las APIs con validación de tokens JWT y rate-limiting por usuario.
+        * **Secret Management:** Uso de **HashiCorp Vault**.
+        * **API Gateway:** Validación de tokens JWT y rate-limiting.
         """)
 
     with rec_3:
         st.warning("### 💾 Datos y Privacidad")
         st.markdown("""
         **Resiliencia:**
-        * **Cifrado AES-256:** Aplicar cifrado en reposo para todas las tablas de bases de datos y volúmenes de almacenamiento.
-        * **Estrategia Backup 3-2-1:** 3 copias de seguridad, en 2 formatos diferentes y 1 copia **Air-gapped** (fuera de línea) contra Ransomware.
+        * **Cifrado AES-256:** Cifrado en reposo para volúmenes de datos.
+        * **Estrategia Backup 3-2-1:** Copias diversificadas y fuera de línea.
         
         **Privacidad Legal:**
-        * **Anonimización:** Uso de técnicas de *masking* de datos en entornos de desarrollo para proteger PII (Información de Identificación Personal).
-        * **Eliminación Segura:** Implementar flujos automáticos para cumplir con el "Derecho al Olvido" de normativas internacionales.
+        * **Anonimización:** Masking de datos en entornos de desarrollo.
+        * **Eliminación Segura:** Flujos para cumplir con el derecho al olvido.
         """)
 
     st.divider()
     
-    # Nota final de cierre
-    st.markdown("""
+    # Nota final de cierre (Sanitizamos el texto de la nota por seguridad estructural)
+    footer_text = "La seguridad es 100% visibilidad. La arquitectura Zero Trust no se trata de no confiar en nadie, sino de verificarlo todo de forma continua y automática."
+    safe_footer = SecurityCore.sanitize_output(footer_text)
+
+    st.markdown(f"""
     <div style="background-color: #1e2130; padding: 15px; border-radius: 10px; border-left: 5px solid #f7d08a;">
-        <strong>Nota del Experto:</strong> La seguridad es 100% visibilidad. La arquitectura Zero Trust no se trata de no confiar en nadie, sino de verificarlo todo de forma continua y automática.
+        <strong>Nota del Experto:</strong> {safe_footer}
     </div>
     """, unsafe_allow_html=True)

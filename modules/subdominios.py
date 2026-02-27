@@ -2,13 +2,20 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
+from modules.security_core import SecurityCore  # Importación del escudo de seguridad
 
 def render_subdominios(results):
     st.title("🔗 Inteligencia de Subdominios")
     
     if results and results.get("subs"):
-        subdominios = results["subs"]
-        target = results["target"]
+        # Sanitizamos los datos de entrada antes de procesar la lógica del gráfico
+        subdominios_raw = results["subs"]
+        target_raw = results["target"]
+        
+        # Sanitizamos el target para el centro del gráfico
+        target = SecurityCore.sanitize_output(target_raw)
+        # Sanitizamos cada subdominio para la lista y el gráfico
+        subdominios = [SecurityCore.sanitize_output(s) for s in subdominios_raw]
 
         st.subheader("🌐 Visualización de Superficie de Ataque")
         
@@ -48,7 +55,7 @@ def render_subdominios(results):
             mode='lines'
         ))
 
-        # Nodos (Puntos) - AQUÍ SE CORRIGIÓ EL ERROR
+        # Nodos (Puntos)
         fig.add_trace(go.Scatter(
             x=x_nodes, y=y_nodes,
             mode='markers+text',
@@ -58,9 +65,8 @@ def render_subdominios(results):
             marker=dict(
                 size=size_nodes,
                 color=color_nodes,
-                line=dict(width=2, color='#7c3aed'), # Borde morado para resaltar
-                # Se eliminó la propiedad 'shadow' que causaba el error
-                gradient=dict(type="radial", color="#ffffff") # Efecto de brillo alternativo
+                line=dict(width=2, color='#7c3aed'),
+                gradient=dict(type="radial", color="#ffffff")
             )
         ))
 
@@ -83,6 +89,7 @@ def render_subdominios(results):
         
         with col1:
             st.markdown("### 📋 Listado de Activos")
+            # Los datos en el DataFrame ya están sanitizados por la comprensión de lista arriba
             df = pd.DataFrame(subdominios, columns=["Dirección del Subdominio"])
             st.dataframe(df, use_container_width=True, height=300)
 
