@@ -16,11 +16,10 @@ st.set_page_config(
 )
 
 # --- 2. APLICACIÓN DE ESTILOS EXTERNOS ---
-# Llamamos a la función de tu archivo modules/styles.py
-# He quitado el bloque st.markdown de CSS que tenías aquí para evitar conflictos
+# Cargamos los estilos adaptativos desde modules/styles.py
 apply_styles()
 
-# Ocultamos solo elementos globales mínimos que no dependen del tema
+# Pequeños ajustes globales de interfaz
 st.markdown("""
     <style>
         #MainMenu { visibility: visible; }
@@ -35,7 +34,7 @@ if 'results' not in st.session_state:
 
 # --- 4. BARRA LATERAL (CONTROL Y NAVEGACIÓN) ---
 with st.sidebar:
-    # Banner Principal
+    # Banner Principal del Sidebar
     st.markdown("""
         <div style="
             background: linear-gradient(135deg, #6d28d9 0%, #1f2937 100%);
@@ -51,7 +50,7 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
 
-    # Menú de Radio
+    # Menú de Navegación
     menu = st.radio(
         "Navegación:", 
         [
@@ -66,7 +65,7 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Formulario de entrada
+    # Formulario de Entrada
     with st.form("sc_form"):
         target_input = st.text_input("URL o Dominio:", "testphp.vulnweb.com")
         submit = st.form_submit_button("🚀 INICIAR ESCANEO", use_container_width=True)
@@ -90,49 +89,70 @@ if submit:
                 "ip": scanner.target_ip, 
                 "target": clean_target
             }
-            # Limpiar caché de módulos
-            keys = ['tech_data', 'form_data', 'fuzzer_results', 'tech_results', 'form_results']
-            for k in keys:
+            # Limpiar caché de sub-módulos para nuevos escaneos
+            keys_to_clear = ['tech_data', 'form_data', 'fuzzer_results', 'tech_results', 'form_results']
+            for k in keys_to_clear:
                 if k in st.session_state: del st.session_state[k]
             
             st.toast(f"Escaneo finalizado: {clean_target}", icon='✅')
     else:
         st.error("No se pudo resolver el dominio. Verifica la conexión.")
 
-
-
-# --- 6. ÁREA DE RESULTADOS Y BOTÓN DE LIMPIEZA CON CONFIRMACIÓN ---
+# --- 6. RENDERIZADO DE CONTENIDO ---
 res = st.session_state.results
 
-if res:
-    # Creamos dos columnas: una para el título y otra para el botón/popover
+if not res:
+    # BANNER COMPACTO DE BIENVENIDA (Cuando no hay resultados)
+    st.markdown("""
+        <div style="
+            background: linear-gradient(90deg, rgba(109, 40, 217, 0.1) 0%, rgba(31, 41, 55, 0.2) 100%);
+            padding: 20px 30px;
+            border-radius: 12px;
+            border-left: 5px solid #6d28d9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 10px 0 20px 0;
+        ">
+            <div style="text-align: left;">
+                <h2 style="color: #6d28d9; margin: 0; font-size: 22px; font-family: 'Courier New', monospace;">🛡️ SCAN-WEB  </h2>
+                <p style="margin: 0; color: #a78bfa; font-size: 14px; opacity: 0.8;">Framework listo. Inicia un escaneo para comenzar.</p>
+            </div>
+            <div style="text-align: right;">
+                <div class="pulse-dot" style="color: #94a3b8; font-size: 13px; font-weight: bold;">
+                    <span style="color: #7c3aed; font-size: 18px;">●</span> SISTEMA EN ESPERA
+                </div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    st.info("👈 Ingresa una URL o dominio en el panel lateral para iniciar el análisis de seguridad.")
+
+    # Si se selecciona la guía sin resultados, se muestra aquí
+    if menu == "🛡️ Guía de Seguridad":
+        render_guia()
+
+else:
+    # CABECERA DE RESULTADOS Y BOTÓN DE LIMPIEZA
     col_title, col_clear = st.columns([0.80, 0.20])
     
     with col_title:
-        st.subheader(f"📊 Resultados para: {res['target']}")
+        st.subheader(f"📊 Análisis: {res['target']}")
     
     with col_clear:
-        # Usamos un popover para que el botón de confirmación no ocupe espacio extra
+        # Popover para confirmación de limpieza
         with st.popover("🗑️ Limpiar", use_container_width=True):
-            st.warning("¿Estás seguro de que quieres borrar los resultados?")
-            if st.button("Sí, borrar todo", type="primary", use_container_width=True):
-                # Resetear la sesión
+            st.warning("¿Borrar todos los resultados?")
+            if st.button("Confirmar", type="primary", use_container_width=True):
                 st.session_state.results = None
-                # Limpiar claves de módulos específicos
-                keys_to_reset = ['tech_data', 'form_data', 'fuzzer_results', 'tech_results', 'form_results']
-                for k in keys_to_reset:
-                    if k in st.session_state:
-                        del st.session_state[k]
+                keys_to_clear = ['tech_data', 'form_data', 'fuzzer_results', 'tech_results', 'form_results']
+                for k in keys_to_clear:
+                    if k in st.session_state: del st.session_state[k]
                 st.rerun()
 
-# --- 7. RENDERIZADO DE CONTENIDO ---
-if not res:
-    st.info("👋 Bienvenido a Scan-Web Pro. Introduce un dominio en el panel lateral para comenzar.")
-    # Permitir ver la guía aunque no haya escaneo
-    if menu == "🛡️ Guía de Seguridad":
-        render_guia()
-else:
-    # Mostrar el módulo seleccionado según el menú de navegación
+    st.divider()
+
+    # RENDERIZADO DEL MÓDULO SELECCIONADO
     if menu == "🧪 Auditoría Web":
         render_auditoria(res)
     elif menu == "🔗 Subdominios":
