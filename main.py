@@ -109,7 +109,7 @@ if not res:
             margin: 10px 0 20px 0;
         ">
             <div style="text-align: left;">
-                <h2 style="color: #6d28d9; margin: 0; font-size: 22px; font-family: 'Courier New', monospace;">🛡️ SCAN-WEB P</h2>
+                <h2 style="color: #6d28d9; margin: 0; font-size: 22px; font-family: 'Courier New', monospace;">🛡️ SCAN-WEB </h2>
                 <p style="margin: 0; color: #a78bfa; font-size: 14px; opacity: 0.8;">Sistema de Auditoría </p>
             </div>
             <div style="text-align: right;">
