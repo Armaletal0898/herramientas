@@ -43,19 +43,20 @@ def render_tech_stack(results):
                     'X-AspNet-Version': 'Framework .NET'
                 }
                 
-                # En el código original h es una lista de diccionarios del auditor, 
-                # convertimos a dict simple para búsqueda rápida
                 h_dict = {item['Cabecera']: item.get('Valor', 'N/A') for item in h if isinstance(item, dict)}
-                # Si el auditor no pasó los valores raw, intentamos una petición rápida
+                
+                # Si el auditor no pasó los valores raw, intentamos una petición rápida (HEAD)
                 if not h_dict:
                     try:
                         res_head = requests.head(target_url, timeout=3)
+                        # --- INTEGRACIÓN SECURITY CORE (HEAD) ---
+                        SecurityCore.analyze_response(target_url, response=res_head)
                         h_dict = res_head.headers
-                    except: pass
+                    except Exception as e:
+                        SecurityCore.analyze_response(target_url, error=e)
 
                 for header, categoria in check_map.items():
                     if header in h_dict:
-                        # SANITIZACIÓN del valor de la cabecera
                         safe_val = SecurityCore.sanitize_output(h_dict[header])
                         techs.append({
                             "Categoría": categoria, 
@@ -63,39 +64,50 @@ def render_tech_stack(results):
                             "Tipo": "Pasivo"
                         })
                 
-                # 2. Análisis Activo
+                # 2. Análisis Activo (Fingerprinting de Error y CMS)
                 try:
                     # Forzamos error 404 para ver firmas
                     test_path = f"{target_url}/error_check_{int(pd.Timestamp.now().timestamp())}"
-                    r = requests.get(test_path, timeout=3, verify=False)
+                    r = requests.get(test_path, timeout=5, verify=False)
                     
-                    server_raw = r.headers.get('Server', '')
-                    if server_raw:
-                        techs.append({
-                            "Categoría": "Servidor (Firma)", 
-                            "Valor": SecurityCore.sanitize_output(server_raw.capitalize()), 
-                            "Tipo": "Activo"
-                        })
+                    # --- INTEGRACIÓN SECURITY CORE (GET 404) ---
+                    # Aunque sea un 404, queremos saber si el WAF bloqueó la petición
+                    if SecurityCore.analyze_response(target_url, response=r):
+                        server_raw = r.headers.get('Server', '')
+                        if server_raw:
+                            techs.append({
+                                "Categoría": "Servidor (Firma)", 
+                                "Valor": SecurityCore.sanitize_output(server_raw.capitalize()), 
+                                "Tipo": "Activo"
+                            })
                     
-                    # Detección de CMS
-                    cms_paths = {
-                        "/wp-includes/": "WordPress",
-                        "/administrator/": "Joomla",
-                        "/user/login": "Drupal"
-                    }
-                    for path, name in cms_paths.items():
-                        try:
-                            cms_check = requests.get(f"{target_url}{path}", timeout=2, verify=False)
-                            if cms_check.status_code == 200:
-                                techs.append({
-                                    "Categoría": "CMS Detectado", 
-                                    "Valor": SecurityCore.sanitize_output(name), 
-                                    "Tipo": "Activo"
-                                })
-                        except: continue
-                            
+                        # Detección de CMS
+                        cms_paths = {
+                            "/wp-includes/": "WordPress",
+                            "/administrator/": "Joomla",
+                            "/user/login": "Drupal"
+                        }
+                        for path, name in cms_paths.items():
+                            try:
+                                full_cms_url = f"{target_url}{path}"
+                                cms_check = requests.get(full_cms_url, timeout=3, verify=False)
+                                
+                                # Si el WAF bloquea un path específico (muy común), avisamos y saltamos ese path
+                                if not SecurityCore.analyze_response(full_cms_url, response=cms_check):
+                                    continue 
+                                    
+                                if cms_check.status_code == 200:
+                                    techs.append({
+                                        "Categoría": "CMS Detectado", 
+                                        "Valor": SecurityCore.sanitize_output(name), 
+                                        "Tipo": "Activo"
+                                    })
+                            except Exception as e:
+                                SecurityCore.analyze_response(full_cms_url, error=e)
+                                continue
+                                
                 except Exception as e:
-                    st.error(f"Error en fingerprinting activo: {SecurityCore.sanitize_output(str(e))}")
+                    SecurityCore.analyze_response(target_url, error=e)
                 
                 st.session_state.tech_results = techs
 
@@ -105,14 +117,7 @@ def render_tech_stack(results):
         st.write("### Tecnologías Identificadas")
         
         df_tech = pd.DataFrame(st.session_state.tech_results)
-        
-        # Mostramos la tabla sanitizada
-        st.dataframe(
-            df_tech, 
-            use_container_width=True, 
-            hide_index=True
-        )
-        
+        st.dataframe(df_tech, use_container_width=True, hide_index=True)
         st.success("✅ Datos sincronizados con el Resumen Final en Auditoría.")
     else:
         st.warning("Presiona el botón superior para iniciar el análisis del stack.")
