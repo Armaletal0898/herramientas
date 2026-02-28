@@ -16,6 +16,7 @@ class SecurityCore:
             with open("audit_log.txt", "a", encoding="utf-8") as f:
                 f.write(log_entry)
         except Exception as e:
+            # En Streamlit Cloud, print() se ve en los logs de la consola
             print(f"Error crítico al escribir log: {e}")
 
     @staticmethod
@@ -24,9 +25,10 @@ class SecurityCore:
         if not target:
             return False
         
+        # Patrón robusto para dominios, IPs y rutas básicas
         pattern = r'^[a-zA-Z0-9\-\.\/:]+$'
         if not re.match(pattern, str(target)):
-            st.error("⚠️ Caracteres no permitidos detectados.")
+            st.error("⚠️ Caracteres no permitidos detectados en el objetivo.")
             SecurityCore.log_activity(target, "BLOQUEADO", "Intento de Inyección de Caracteres")
             return False
         return True
@@ -35,13 +37,17 @@ class SecurityCore:
     def prevent_ssrf(target):
         """Previene ataques de Server Side Request Forgery (SSRF)"""
         try:
+            # Extraer solo el host (sin http ni paths)
             clean_url = str(target).replace('http://', '').replace('https://', '').split('/')[0]
-            parsed = urlparse(f"http://{clean_url}")
-            host = parsed.netloc
+            if ":" in clean_url: clean_url = clean_url.split(":")[0] # Quitar puerto si existe
             
-            ip = socket.gethostbyname(host)
+            ip = socket.gethostbyname(clean_url)
             
-            private_ranges = ["127.", "0.0.0.0", "localhost", "10.", "172.16.", "172.17.", "172.18.", "172.19.", "172.20.", "172.21.", "172.22.", "172.23.", "172.24.", "172.25.", "172.26.", "172.27.", "172.28.", "172.29.", "172.30.", "172.31.", "192.168.", "169.254."]
+            # Lista completa de rangos privados
+            private_ranges = ["127.", "0.0.0.0", "localhost", "10.", "172.16.", "172.17.", 
+                              "172.18.", "172.19.", "172.20.", "172.21.", "172.22.", 
+                              "172.23.", "172.24.", "172.25.", "172.26.", "172.27.", 
+                              "172.28.", "172.29.", "172.30.", "172.31.", "192.168.", "169.254."]
             
             if any(ip.startswith(prefix) for prefix in private_ranges):
                 st.error(f"🚫 Acceso denegado a IP interna: {ip}")
@@ -51,23 +57,20 @@ class SecurityCore:
             SecurityCore.log_activity(target, "EXITO", f"Escaneo permitido para IP: {ip}")
             return True
         except socket.gaierror:
-            SecurityCore.log_activity(target, "ERROR", "No se pudo resolver el nombre de host (DNS)")
+            SecurityCore.log_activity(target, "ERROR", "No se pudo resolver DNS")
             st.warning("No se pudo resolver la dirección del objetivo.")
             return False
         except Exception as e:
-            SecurityCore.log_activity(target, "ERROR", f"Error inesperado en prevent_ssrf: {str(e)}")
+            SecurityCore.log_activity(target, "ERROR", f"Error en prevent_ssrf: {str(e)}")
             return False
 
     @staticmethod
     def sanitize_output(text):
-        """Limpia el texto para evitar XSS (Barra '/' permitida para rutas)"""
+        """Limpia el texto para evitar XSS (Mantiene '/' para rutas de fuzzer)"""
         if text is None:
             return ""
         
         clean_text = str(text).strip()
-        
-        # Escapamos solo lo peligroso (<, >, &, ", ') 
-        # Quitamos el '/' de aquí para que veas /admin correctamente
         replacements = {
             "&": "&amp;",
             "<": "&lt;",
@@ -78,45 +81,50 @@ class SecurityCore:
         
         for char, replacement in replacements.items():
             clean_text = clean_text.replace(char, replacement)
-            
         return clean_text
 
     @staticmethod
     def analyze_response(target, response=None, error=None):
         """
-        Analiza por qué un módulo no obtuvo resultados.
-        Detecta WAF, Firewalls, Errores de Conexión o falta de datos.
+        Analiza la respuesta para detectar WAF, bloqueos o errores de red.
+        Retorna False si el escaneo debe detenerse.
         """
-        # CASO 1: Si hubo una excepción (Timeout, Conexión rechazada)
+        # CASO 1: Errores de red (Timeout / Connection Refused)
         if error:
             error_str = str(error).lower()
             if "timeout" in error_str:
-                st.warning(f"⏳ **Timeout en {target}:** El servidor tarda demasiado. Posible IDS/Firewall bloqueando tráfico masivo.")
-                SecurityCore.log_activity(target, "AVISO", "Timeout detectado (Posible IDS)")
-            elif "connection" in error_str:
-                st.error(f"❌ **Error de Conexión:** No se pudo establecer contacto con {target}. ¿El host está activo?")
-                SecurityCore.log_activity(target, "ERROR", "Conexión rechazada")
+                st.warning(f"⏳ **Timeout:** El servidor tardó mucho. Posible Firewall/IDS activo.")
+                SecurityCore.log_activity(target, "AVISO", "Timeout detectado")
+            else:
+                st.error(f"❌ **Error de Red:** No hay conexión con el objetivo.")
+                SecurityCore.log_activity(target, "ERROR", f"Fallo de conexión: {error_str[:50]}")
             return False
 
-        # CASO 2: Si recibimos una respuesta del servidor
+        # CASO 2: Análisis de Respuesta HTTP
         if response is not None:
             sc = response.status_code
-            text = response.text.lower()
             
-            # Firmas comunes de WAF o Bloqueos
-            waf_signatures = ["cloudflare", "mod_security", "imperva", "sucuri", "incapsula", "akamai", "403 forbidden", "access denied"]
-            
+            # Códigos de bloqueo
             if sc in [403, 406, 429]:
-                for sig in waf_signatures:
-                    if sig in text or sig in response.headers.get('Server', '').lower():
-                        st.error(f"🛡️ **WAF/IPS Detectado:** Se ha bloqueado el escaneo en {target} (Código {sc}). Firma: {sig}")
-                        SecurityCore.log_activity(target, "WAF", f"Bloqueo por {sig}")
-                        return False
-                st.warning(f"🚫 **Acceso Restringido (Código {sc}):** El servidor denegó la petición.")
+                server_header = response.headers.get('Server', '').lower()
+                body_text = response.text.lower()
+                
+                waf_signatures = ["cloudflare", "mod_security", "imperva", "sucuri", "incapsula", "akamai"]
+                
+                # Buscar firmas de WAF
+                found_waf = next((sig for sig in waf_signatures if sig in body_text or sig in server_header), None)
+                
+                if found_waf:
+                    st.error(f"🛡️ **WAF Detectado:** Bloqueo por {found_waf.capitalize()} (Status {sc}).")
+                    SecurityCore.log_activity(target, "WAF", f"Bloqueo detectado: {found_waf}")
+                else:
+                    st.warning(f"🚫 **Acceso Denegado (403):** El servidor bloqueó la petición.")
+                    SecurityCore.log_activity(target, "BLOQUEO", "Status 403 sin firma clara")
                 return False
             
+            # Errores graves de servidor
             if sc >= 500:
-                st.error(f"🔥 **Error de Servidor (Código {sc}):** El objetivo está teniendo problemas para procesar las peticiones.")
+                st.error(f"🔥 **Error de Servidor (Código {sc}):** El objetivo no puede procesar más peticiones.")
                 return False
 
         return True
