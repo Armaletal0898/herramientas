@@ -1,103 +1,89 @@
-import re
-import socket
-from urllib.parse import urlparse
 import streamlit as st
-from datetime import datetime
+import requests
+import time
+from modules.security_core import SecurityCore
 
-class SecurityCore:
-    @staticmethod
-    def log_activity(target, status, details=""):
-        """Registra la actividad en un archivo local para auditoría interna"""
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        log_entry = f"[{timestamp}] STATUS: {status} | TARGET: {target} | INFO: {details}\n"
+def render_fuzzer(results):
+    """Módulo de Fuzzing de Directorios con Protección de SecurityCore"""
+    
+    st.subheader("🚀 Fuzzer de Directorios")
+    
+    if not results or 'target' not in results:
+        st.info("👋 Por favor, realiza un escaneo inicial en el panel lateral para obtener el objetivo.")
+        return
+
+    st.markdown("""
+        Este módulo busca directorios y archivos ocultos utilizando una **Wordlist**. 
+        Si el servidor detecta demasiadas peticiones, el escudo de seguridad detendrá el proceso.
+    """)
+
+    # Configuración del Fuzzer
+    target = SecurityCore.sanitize_output(results['target'])
+    target_url = f"http://{target}"
+    
+    # Lista de palabras común para fuzzeo rápido (puedes ampliarla)
+    wordlist_default = ["admin", "login", "config", "backup", "db", "uploads", "api", "v1", "test", "dev"]
+    
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        words_input = st.text_area("Wordlist (una palabra por línea)", value="\n".join(wordlist_default), height=150)
+        wordlist = [w.strip() for w in words_input.split("\n") if w.strip()]
+    
+    with col2:
+        timeout_val = st.slider("Timeout (segundos)", 1, 10, 3)
+        allow_redirects = st.checkbox("Seguir redirecciones", value=False)
+
+    if st.button("Iniciar Fuzzing", use_container_width=True):
+        encontrados = []
+        barra_progreso = st.progress(0)
+        status_text = st.empty()
         
-        try:
-            with open("audit_log.txt", "a", encoding="utf-8") as f:
-                f.write(log_entry)
-        except Exception as e:
-            print(f"Error crítico al escribir log: {e}")
+        with st.spinner("Escaneando rutas..."):
+            for i, path in enumerate(wordlist):
+                # Construir URL limpia
+                url = f"{target_url}/{path}".replace("//", "/")
+                status_text.text(f"Probando: /{path}")
+                
+                try:
+                    # Petición con el timeout configurado
+                    res = requests.get(url, timeout=timeout_val, allow_redirects=allow_redirects, verify=False)
+                    
+                    # --- INTEGRACIÓN CON EL ESCUDO DE SEGURIDAD ---
+                    # Si analyze_response detecta un WAF o bloqueo (403, 429), detendrá el fuzzer
+                    if not SecurityCore.analyze_response(url, response=res):
+                        st.error(f"🛑 Fuzzer abortado en la ruta '/{path}' para proteger tu IP de un baneo permanente.")
+                        SecurityCore.log_activity(target, "FUZZER_STOPPED", f"Bloqueo en /{path}")
+                        break 
+                    
+                    # Si el código es 200, encontramos algo
+                    if res.status_code == 200:
+                        encontrados.append({
+                            "Ruta": f"/{path}",
+                            "Status": res.status_code,
+                            "Tamaño": f"{len(res.content)} bytes"
+                        })
+                        st.success(f"✅ ¡Encontrado! {url} [200 OK]")
+                    
+                except Exception as e:
+                    # Analizar si es un error de red o timeout
+                    if not SecurityCore.analyze_response(url, error=e):
+                        st.error("❌ Error de red crítico. Deteniendo fuzzer.")
+                        break
+                
+                # Actualizar barra de progreso
+                barra_progreso.progress((i + 1) / len(wordlist))
+                time.sleep(0.1) # Pequeño delay para no saturar el servidor demasiado rápido
 
-    @staticmethod
-    def validate_target(target):
-        """Valida que el target no contenga caracteres maliciosos"""
-        if not target:
-            return False
+        status_text.empty()
         
-        pattern = r'^[a-zA-Z0-9\-\.\/:]+$'
-        if not re.match(pattern, str(target)):
-            st.error("⚠️ Caracteres no permitidos detectados.")
-            SecurityCore.log_activity(target, "BLOQUEADO", "Intento de Inyección de Caracteres")
-            return False
-        return True
+        # Mostrar resumen final
+        if encontrados:
+            st.divider()
+            st.write("### 📂 Resultados del Fuzzing")
+            st.table(encontrados)
+            st.success(f"Escaneo finalizado. Se encontraron {len(encontrados)} rutas.")
+        else:
+            st.info("ℹ️ No se encontraron rutas abiertas. El servidor podría estar devolviendo 404 para todo o estar bien protegido.")
 
-    @staticmethod
-    def prevent_ssrf(target):
-        """Previene ataques de Server Side Request Forgery (SSRF)"""
-        try:
-            clean_url = str(target).replace('http://', '').replace('https://', '').split('/')[0]
-            parsed = urlparse(f"http://{clean_url}")
-            host = parsed.netloc
-            
-            ip = socket.gethostbyname(host)
-            
-            private_ranges = ["127.", "0.0.0.0", "localhost", "10.", "172.16.", "172.17.", 
-                              "172.18.", "172.19.", "172.20.", "172.21.", "172.22.", 
-                              "172.23.", "172.24.", "172.25.", "172.26.", "172.27.", 
-                              "172.28.", "172.29.", "172.30.", "172.31.", "192.168.", "169.254."]
-            
-            if any(ip.startswith(prefix) for prefix in private_ranges):
-                st.error(f"🚫 Acceso denegado a IP interna: {ip}")
-                SecurityCore.log_activity(target, "BLOQUEADO", f"Intento de SSRF hacia {ip}")
-                return False
-            
-            SecurityCore.log_activity(target, "EXITO", f"Escaneo permitido para IP: {ip}")
-            return True
-        except socket.gaierror:
-            SecurityCore.log_activity(target, "ERROR", "No se pudo resolver el nombre de host (DNS)")
-            st.warning("No se pudo resolver la dirección del objetivo.")
-            return False
-        except Exception as e:
-            SecurityCore.log_activity(target, "ERROR", f"Error inesperado en prevent_ssrf: {str(e)}")
-            return False
-
-    @staticmethod
-    def sanitize_output(text):
-        """Limpia el texto de salida para evitar XSS o inyecciones de HTML"""
-        if text is None:
-            return ""
-        
-        clean_text = str(text).strip()
-        replacements = {
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;",
-            "'": "&#x27;",
-        }
-        for char, replacement in replacements.items():
-            clean_text = clean_text.replace(char, replacement)
-        return clean_text
-
-    @staticmethod
-    def analyze_response(target, response=None, error=None):
-        """
-        Analiza la respuesta para detectar bloqueos de WAF o errores de red.
-        Evita que la app falle si el servidor bloquea la petición.
-        """
-        if error:
-            err_msg = str(error).lower()
-            if "timeout" in err_msg:
-                st.warning(f"⏳ Timeout en {target}. Posible bloqueo de Firewall.")
-            return False
-
-        if response is not None:
-            status = response.status_code
-            # Detectar bloqueos comunes (403 Forbidden, 429 Too Many Requests)
-            if status in [403, 406, 429]:
-                st.error(f"🛡️ Bloqueo detectado (Código {status}). Posible WAF activo.")
-                SecurityCore.log_activity(target, "BLOQUEO", f"Status Code: {status}")
-                return False
-            if status >= 500:
-                st.error(f"🔥 Error del servidor (Código {status}).")
-                return False
-        return True
+    st.divider()
+    st.caption("Módulo Fuzzer V2.0 | Conectado a SecurityCore Engine")
