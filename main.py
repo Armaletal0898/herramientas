@@ -1,6 +1,6 @@
 import streamlit as st
 from modules.styles import apply_styles
-from modules.security_core import SecurityCore  # Importamos tu nuevo escudo
+from modules.security_core import SecurityCore
 from modules.auditoria import render_auditoria, UniversalSecurityScanner
 from modules.subdominios import render_subdominios
 from modules.guia import render_guia
@@ -59,44 +59,50 @@ with st.sidebar:
         target_input = st.text_input("URL o Dominio:", "testphp.vulnweb.com")
         submit = st.form_submit_button("🚀 INICIAR ESCANEO", use_container_width=True)
 
-# --- 5. LÓGICA DE ESCANEO PROTEGIDA ---
+# --- 5. LÓGICA DE ESCANEO SINCRONIZADA ---
 if submit:
     # FILTRO DE SEGURIDAD GLOBAL
-    # 1. Validamos caracteres (Inyección) | 2. Prevenimos ataque a red interna (SSRF)
     if SecurityCore.validate_target(target_input) and SecurityCore.prevent_ssrf(target_input):
         
         clean_target = target_input.replace("https://", "").replace("http://", "").strip("/")
         scanner = UniversalSecurityScanner(clean_target)
         
         if scanner.target_ip:
-            with st.spinner('Analizando infraestructura...'):
+            with st.spinner('Analizando infraestructura y rastreando activos...'):
+                # Ejecutar Auditoría Web
                 h, c = scanner.audit_web_advanced()
+                
+                # Ejecutar rastreo de Subdominios
+                subs = scanner.get_subdomains()
+                
+                # Guardar resultados unificados
                 st.session_state.results = {
+                    "target": clean_target,
+                    "ip": scanner.target_ip, 
+                    "headers": h, 
+                    "cookies": c, 
+                    "subs": subs if isinstance(subs, list) else [], # Aseguramos que sea lista
                     "ports": scanner.scan_ports(), 
                     "sqli": scanner.scan_sqli_pro(),
                     "geo": scanner.get_geo_info(), 
-                    "ssl": scanner.scan_ssl_pro(),
-                    "headers": h, 
-                    "cookies": c, 
-                    "subs": scanner.get_subdomains(),
-                    "ip": scanner.target_ip, 
-                    "target": clean_target
+                    "ssl": scanner.scan_ssl_pro()
                 }
-                # Limpiar caché de módulos
-                keys = ['tech_data', 'form_data', 'fuzzer_results', 'tech_results', 'form_results']
-                for k in keys:
-                    if k in st.session_state: del st.session_state[k]
                 
-                st.toast(f"Escaneo finalizado con éxito", icon='✅')
+                # Limpiar caché de estados de otros módulos
+                for k in ['tech_results', 'form_results', 'fuzzer_results']:
+                    st.session_state.pop(k, None)
+                
+                st.toast(f"Escaneo finalizado: {len(st.session_state.results['subs'])} subdominios encontrados", icon='✅')
+                
+                # FORZAR RECARGA para que Auditoría y Subdominios se activen al mismo tiempo
+                st.rerun()
         else:
             st.error("No se pudo resolver el dominio. Verifica la conexión.")
-    # Si las validaciones fallan, SecurityCore ya mostró el error y registró el log.
 
 # --- 6. RENDERIZADO DE CONTENIDO ---
 res = st.session_state.results
 
 if not res:
-    # BANNER COMPACTO DE BIENVENIDA
     st.markdown("""
         <div style="
             background: linear-gradient(90deg, rgba(109, 40, 217, 0.1) 0%, rgba(31, 41, 55, 0.2) 100%);
@@ -126,20 +132,20 @@ if not res:
         render_guia()
 
 else:
-    # CABECERA DE RESULTADOS Y LIMPIEZA
+    # CABECERA DE RESULTADOS
     col_title, col_clear = st.columns([0.80, 0.20])
     with col_title:
         st.subheader(f"📊 Análisis: {res['target']}")
     with col_clear:
         with st.popover("🗑️ Limpiar", use_container_width=True):
-            st.warning("¿Borrar todos los resultados?")
+            st.warning("¿Borrar resultados?")
             if st.button("Confirmar", type="primary", use_container_width=True):
                 st.session_state.results = None
                 st.rerun()
 
     st.divider()
 
-    # RENDERIZADO DE MÓDULOS
+    # RENDERIZADO DE MÓDULOS (Ahora res['subs'] siempre existe)
     if menu == "🧪 Auditoría Web":
         render_auditoria(res)
     elif menu == "🔗 Subdominios":
