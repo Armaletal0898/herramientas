@@ -83,7 +83,6 @@ class SecurityCore:
             ">": "&gt;",
             '"': "&quot;",
             "'": "&#x27;",
-            "/": "&#x2F;"
         }
         
         for char, replacement in replacements.items():
