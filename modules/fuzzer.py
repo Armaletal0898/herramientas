@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import time
+import pandas as pd
 from modules.security_core import SecurityCore
 
 def render_fuzzer(results):
