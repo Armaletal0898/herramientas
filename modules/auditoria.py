@@ -4,7 +4,7 @@ import plotly.express as px
 import socket, requests, ssl
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
-from modules.security_core import SecurityCore  # Importación del motor de seguridad
+from modules.security_core import SecurityCore
 
 # --- COLORES ---
 COLOR_SAFE, COLOR_RISK, COLOR_WARN = "#475569", "#e59a94", "#f7d08a"
@@ -30,7 +30,6 @@ class UniversalSecurityScanner:
             response = requests.get(url, timeout=10)
             if response.status_code == 200:
                 for entry in response.json():
-                    # Sanitizamos el nombre del subdominio
                     name = SecurityCore.sanitize_output(entry['name_value'].lower())
                     for sub in name.split("\n"):
                         subdomains.add(sub.replace("*.", ""))
@@ -41,7 +40,6 @@ class UniversalSecurityScanner:
         if not self.target_ip: return {"País": "N/A", "Ciudad": "N/A", "ISP": "N/A"}
         try:
             response = requests.get(f"http://ip-api.com/json/{self.target_ip}", timeout=5).json()
-            # Sanitizamos la información geográfica
             return {
                 "País": SecurityCore.sanitize_output(response.get("country", "N/A")), 
                 "Ciudad": SecurityCore.sanitize_output(response.get("city", "N/A")), 
@@ -57,7 +55,6 @@ class UniversalSecurityScanner:
                     cert = ssock.getpeercert()
                     issuer = dict(x[0] for x in cert.get('issuer'))['commonName']
                     expiry = cert.get('notAfter')
-                    # Sanitizamos emisor y versión de TLS
                     return {
                         "Estado": "✅ Seguro", 
                         "Emisor": SecurityCore.sanitize_output(issuer), 
@@ -83,7 +80,6 @@ class UniversalSecurityScanner:
             soup = BeautifulSoup(r.text, 'html.parser')
             forms = soup.find_all('form')
             for form in forms:
-                # Sanitizamos los atributos de los formularios detectados
                 action = SecurityCore.sanitize_output(form.get('action') or "Interno")
                 method = SecurityCore.sanitize_output(form.get('method') or "GET")
                 vuls.append({"Formulario": action, "Método": method.upper(), "Tipo": "SQLi/XSS Risk", "Severidad": "Crítica"})
@@ -97,8 +93,7 @@ class UniversalSecurityScanner:
             "Strict-Transport-Security": "HSTS Seguridad",
             "X-Frame-Options": "Clickjacking",
             "X-Content-Type-Options": "Sniffing",
-            "Referrer-Policy": "Privacidad Ref",
-            "Permissions-Policy": "Control API"
+            "Referrer-Policy": "Privacidad Ref"
         }
         try:
             res = requests.get(self.base_url, timeout=5)
@@ -106,7 +101,6 @@ class UniversalSecurityScanner:
                 status = "✅ OK" if h in res.headers else "❌ Ausente"
                 h_res.append({"Cabecera": h, "Estado": status, "Función": desc})
             for cookie in res.cookies:
-                # Sanitizamos los nombres de las cookies
                 c_res.append({
                     "Nombre": SecurityCore.sanitize_output(cookie.name), 
                     "Seguro": "✅" if cookie.secure else "❌ Insegura"
@@ -120,124 +114,87 @@ def render_auditoria(results):
         return
 
     r = results
-    
-    # 1. MÉTRICAS RÁPIDAS (Sanitizamos el target para el reporte)
     target_clean = SecurityCore.sanitize_output(r["target"])
     
+    # 1. MÉTRICAS
     m1, m2, m3, m4 = st.columns(4)
-    m1.markdown(f'<div class="metric-card"><div class="metric-label">Riesgos SQLi</div><div class="metric-value">{len(r["sqli"])}</div></div>', unsafe_allow_html=True)
-    m2.markdown(f'<div class="metric-card"><div class="metric-label">Puertos Abiertos</div><div class="metric-value">{len(r["ports"])}</div></div>', unsafe_allow_html=True)
-    m3.markdown(f'<div class="metric-card"><div class="metric-label">Dirección IP</div><div class="metric-value" style="font-size:18px">{r["ip"]}</div></div>', unsafe_allow_html=True)
-    m4.markdown(f'<div class="metric-card"><div class="metric-label">País</div><div class="metric-value" style="font-size:18px">{r["geo"]["País"]}</div></div>', unsafe_allow_html=True)
+    m1.metric("Riesgos SQLi", len(r["sqli"]))
+    m2.metric("Puertos Abiertos", len(r["ports"]))
+    m3.metric("IP", r["ip"])
+    m4.metric("País", r["geo"]["País"])
 
     st.divider()
 
-    # 2. RESUMEN VISUAL (PASTEL + INFO BOX)
-    col_main_1, col_main_2 = st.columns([1, 1])
-    with col_main_1:
+    # 2. RESUMEN VISUAL
+    col1, col2 = st.columns([1, 1])
+    with col1:
         missing_h = sum(1 for h in r["headers"] if "❌" in h['Estado'])
-        risk_count = len(r["sqli"]) + len(r["ports"]) + missing_h
-        fig_p = px.pie(values=[max(1, 20-risk_count), risk_count], names=['Puntos Seguros', 'Riesgos'], hole=.7,
+        fig_p = px.pie(values=[max(1, 20-missing_h), missing_h], names=['Seguro', 'Riesgos'], hole=.7,
                       color_discrete_sequence=[COLOR_SAFE, COLOR_RISK])
-        fig_p.update_layout(showlegend=True, paper_bgcolor='rgba(0,0,0,0)', height=300, 
-                            margin=dict(t=0, b=0, l=0, r=0), font=dict(color=COLOR_TEXT_SAFE))
+        fig_p.update_layout(showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=250)
         st.plotly_chart(fig_p, use_container_width=True)
 
-    with col_main_2:
+    with col2:
         st.markdown(f"""
-        <div class="info-box">
-            <h4>🌐 Infraestructura de Red</h4>
-            <p><b>📍 Ubicación:</b> {r["geo"]["Ciudad"]}, {r["geo"]["País"]}</p>
-            <p><b>🖥️ Dirección IP:</b> {r["ip"]}</p>
-            <p><b>🏢 Proveedor (ISP):</b> {r["geo"]["ISP"]}</p>
-            <hr style="border-color: #334155;">
-            <h4>🔐 Certificación de Seguridad</h4>
-            <p><b>Estado SSL:</b> {r["ssl"]["Estado"]}</p>
-            <p><b>Expiración:</b> {r["ssl"]["Expiración"]}</p>
+        <div style="background: #1e293b; padding: 15px; border-radius: 10px; border: 1px solid #334155;">
+            <h4 style="margin:0">🔐 SSL & Red</h4>
+            <p style="margin:5px 0"><b>Estado:</b> {r["ssl"]["Estado"]}</p>
+            <p style="margin:5px 0"><b>ISP:</b> {r["geo"]["ISP"]}</p>
+            <p style="margin:5px 0"><b>TLS:</b> {r["ssl"]["TLS"]}</p>
         </div>
         """, unsafe_allow_html=True)
 
-    st.divider()
-
-    # 3. PESTAÑAS TÉCNICAS
-    t1, t2, t3 = st.tabs(["📊 Score & Cabeceras", "📡 Puertos & Servicios", "📋 Resumen Consolidado"])
+    # 3. PESTAÑAS
+    t1, t2, t3 = st.tabs(["📊 Score", "📡 Red", "📋 Resumen Consolidado"])
     
     with t1:
-        st.subheader("📊 Análisis Detallado de Seguridad")
-        sec_df = pd.DataFrame({
-            "Categoría": ["SQLi", "Cabeceras", "Cookies", "Puertos", "SSL"], 
-            "Score": [
-                100 if not r["sqli"] else 20, 
-                max(0, 100-(missing_h*16)), 
-                80 if r["cookies"] else 100, 
-                max(0, 100-(len(r["ports"])*15)), 
-                100 if "✅" in r["ssl"]["Estado"] else 0
-            ]
-        })
-        fig_b = px.bar(sec_df, x="Score", y="Categoría", orientation='h', range_x=[0,100], color="Score", 
-                      color_continuous_scale=[COLOR_RISK, COLOR_WARN, COLOR_SAFE], text_auto=True)
-        fig_b.update_layout(showlegend=False, coloraxis_showscale=False, paper_bgcolor='rgba(0,0,0,0)', height=300, font=dict(color=COLOR_TEXT_SAFE))
-        st.plotly_chart(fig_b, use_container_width=True)
-
-        st.divider()
-        col_a, col_b = st.columns(2)
-        with col_a:
-            st.write("**🛡️ Auditoría de Cabeceras**")
-            st.dataframe(pd.DataFrame(r["headers"]), use_container_width=True, hide_index=True)
-            st.write("**🔐 Detalle Técnico SSL**")
-            st.json(r["ssl"])
-        with col_b:
-            st.write("**💉 Vulnerabilidades SQL**")
-            if r["sqli"]: st.dataframe(pd.DataFrame(r["sqli"]), use_container_width=True, hide_index=True)
-            else: st.success("No se detectaron formularios vulnerables.")
-            st.write("**🍪 Cookies**")
-            if r["cookies"]: st.dataframe(pd.DataFrame(r["cookies"]), use_container_width=True, hide_index=True)
-            else: st.info("No se detectaron cookies.")
+        st.dataframe(pd.DataFrame(r["headers"]), use_container_width=True, hide_index=True)
+        st.write("**Vulnerabilidades detectadas:**")
+        st.dataframe(pd.DataFrame(r["sqli"]), use_container_width=True)
 
     with t2:
-        st.write("#### Puertos y Servicios de Red")
-        if r["ports"]: st.dataframe(pd.DataFrame(r["ports"]), use_container_width=True, hide_index=True)
-        else: st.success("No se encontraron puertos críticos abiertos.")
+        st.write("#### Puertos Detectados")
+        st.table(pd.DataFrame(r["ports"]))
 
     with t3:
-        st.subheader("📋 Consolidado de Seguridad")
-        st.write("Resultados integrados de todos los módulos activos.")
-        
+        st.subheader("📋 Consolidado de Hallazgos Globales")
         summary_list = []
 
+        # --- Hallazgos de Auditoría (Siempre presentes) ---
         if r["sqli"]:
-            summary_list.append({"Módulo": "Auditoría", "Hallazgo": "Posible Inyección SQL/XSS", "Severidad": "Crítica", "Impacto": "Acceso a Datos"})
+            summary_list.append({"Módulo": "Auditoría", "Hallazgo": "Posible SQLi/XSS en formularios", "Severidad": "Crítica"})
         if "❌" in r["ssl"]["Estado"]:
-            summary_list.append({"Módulo": "Auditoría", "Hallazgo": "Falta cifrado SSL", "Severidad": "Alta", "Impacto": "Man-in-the-Middle"})
+            summary_list.append({"Módulo": "Auditoría", "Hallazgo": "Falta cifrado SSL (HTTPS)", "Severidad": "Alta"})
         
-        if 'tech_results' in st.session_state and st.session_state.tech_results:
-            for t in st.session_state.tech_results:
-                summary_list.append({"Módulo": "Tech Stack", "Hallazgo": f"Software: {SecurityCore.sanitize_output(t.get('Valor'))}", "Severidad": "Baja", "Impacto": "Enumeración"})
+        # --- Hallazgos de Stack Tecnológico ---
+        tech_data = st.session_state.get('tech_results')
+        if tech_data:
+            for t in tech_data:
+                summary_list.append({"Módulo": "Tech Stack", "Hallazgo": f"Detectado: {t.get('Valor')}", "Severidad": "Baja"})
 
-        if 'form_results' in st.session_state and st.session_state.form_results:
-            for f in st.session_state.form_results:
-                if f.get("CSRF Token") == "No encontrado":
-                    action_clean = SecurityCore.sanitize_output(f.get('Acción'))
-                    summary_list.append({"Módulo": "Formularios", "Hallazgo": f"Falta CSRF en {action_clean}", "Severidad": "Media", "Impacto": "Ataque CSRF"})
+        # --- Hallazgos de Seguridad de Formularios ---
+        form_data = st.session_state.get('form_results')
+        if form_data:
+            for f in form_data:
+                # Corregido: Buscamos en "Protección CSRF"
+                if "No encontrado" in f.get("Protección CSRF", ""):
+                    summary_list.append({"Módulo": "Formularios", "Hallazgo": f"Sin CSRF en {f.get('Acción')}", "Severidad": "Media"})
 
-        if 'fuzzer_data' in st.session_state and st.session_state.fuzzer_data:
-            for entry in st.session_state.fuzzer_data:
-                ruta_clean = SecurityCore.sanitize_output(entry['Ruta'])
-                summary_list.append({"Módulo": "Fuzzer", "Hallazgo": f"Ruta: {ruta_clean}", "Severidad": entry.get('Riesgo', 'Media'), "Impacto": "Acceso Directo"})
+        # --- Hallazgos del Fuzzer ---
+        fuzz_data = st.session_state.get('fuzzer_results')
+        if fuzz_data:
+            for entry in fuzz_data:
+                summary_list.append({"Módulo": "Fuzzer", "Hallazgo": f"Directorio expuesto: {entry['Ruta']}", "Severidad": "Media"})
 
         if summary_list:
             df_sum = pd.DataFrame(summary_list)
             
             def style_severity(val):
-                if val == 'Crítica': color = COLOR_RISK
-                elif val == 'Alta': color = '#fca5a5'
-                elif val == 'Media': color = COLOR_WARN
-                else: color = COLOR_SAFE
-                return f'color: {color}; font-weight: bold'
+                colors = {'Crítica': '#ef4444', 'Alta': '#f87171', 'Media': '#fbbf24', 'Baja': '#60a5fa'}
+                return f'color: {colors.get(val, "white")}; font-weight: bold'
 
             st.dataframe(df_sum.style.applymap(style_severity, subset=['Severidad']), use_container_width=True, hide_index=True)
         else:
-            st.info("⚠️ No hay hallazgos adicionales. Ejecuta los módulos individuales para ver resultados aquí.")
+            st.info("🔎 No hay hallazgos adicionales. Navega a los otros módulos para profundizar el análisis.")
 
-    st.divider()
-    st.caption(f"Security Analyst Report - Target: {target_clean}")
+    st.caption(f"Security Report - {target_clean}")
