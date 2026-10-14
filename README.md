@@ -95,6 +95,4 @@ Mientras la herramienta esté activa, puedes utilizar los siguientes comandos es
 
 Este proyecto es de código abierto. Si deseas proponer mejoras, optimizaciones de algoritmos o nuevos parsers de formatos, siembra una rama o abre un *Pull Request*.
 
-```
 
-```
